@@ -2,8 +2,8 @@ define(["require", "exports", "@syncfusion/ej2-schedule", "./datasource", "@sync
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     ej2_schedule_1.Schedule.Inject(ej2_schedule_1.Day);
-    var isReadOnly = function (data) {
-        return (data.EndTime < new Date(2018, 6, 31, 0, 0));
+    var isReadOnly = function (endDate) {
+        return (endDate < new Date(2018, 6, 31, 0, 0));
     };
     var data = ej2_base_1.extend([], datasource_1.roomData, null, true);
     var scheduleOptions = {
@@ -16,17 +16,18 @@ define(["require", "exports", "@syncfusion/ej2-schedule", "./datasource", "@sync
         group: {
             resources: ['Rooms'],
             byDate: true,
-            enableCompactView: false
+            enableCompactView: false,
+            allowGroupEdit: true
         },
         workHours: { start: '08:00' },
         resources: [{
-                field: 'RoomId', title: 'Select Room', name: 'Rooms',
+                field: 'RoomId', title: 'Select Room', name: 'Rooms', allowMultiple: true,
                 dataSource: [
-                    { text: 'Jammy Cool', id: 1, capacity: 20, type: 'Conference' },
-                    { text: 'Tweety Nest', id: 2, capacity: 7, type: 'Cabin' },
-                    { text: 'Rounded Corner', id: 3, capacity: 5, type: 'Cabin' },
-                    { text: 'Scenic View Hall', id: 4, capacity: 15, type: 'Conference' },
-                    { text: 'Mission Hall', id: 5, capacity: 25, type: 'Conference' }
+                    { text: 'Training room', id: 1, capacity: 20, type: 'Conference' },
+                    { text: 'Conf room 1', id: 2, capacity: 7, type: 'Cabin' },
+                    { text: 'Interview room 1', id: 3, capacity: 5, type: 'Cabin' },
+                    { text: 'Interview room 2', id: 4, capacity: 15, type: 'Conference' },
+                    { text: 'Conf room 2', id: 5, capacity: 25, type: 'Conference' }
                 ],
                 textField: 'text', idField: 'id'
             }],
@@ -36,6 +37,7 @@ define(["require", "exports", "@syncfusion/ej2-schedule", "./datasource", "@sync
             enableTooltip: true,
             tooltipTemplate: '#tooltipTemplate',
             fields: {
+                id: 'Id',
                 subject: { title: 'Summary', name: 'Subject' },
                 location: { title: 'Location', name: 'Location' },
                 description: { title: 'Comments', name: 'Description' },
@@ -45,19 +47,23 @@ define(["require", "exports", "@syncfusion/ej2-schedule", "./datasource", "@sync
         },
         popupOpen: function (args) {
             var data = args.data;
-            if (isReadOnly(args.data) || args.target.classList.contains('lunch-break') || args.target.classList.contains('maintenance') || (args.target.classList.contains('e-read-only-cells')) || (!scheduleObj.isSlotAvailable(data.startTime, data.EndTime, data.groupIndex))) {
-                args.cancel = true;
+            if (args.type === "QuickInfo" || args.type === "Editor" || args.type === "RecurrenceAlert" || args.type === "DeleteAlert") {
+                var target = (args.type == "RecurrenceAlert" || args.type == "DeleteAlert") ? data.element[0] : args.target;
+                if (!ej2_base_1.isNullOrUndefined(target) && target.classList.contains('e-work-cells')) {
+                    var endDate = data.endTime;
+                    var startDate = data.startTime;
+                    var groupIndex = data.groupIndex;
+                    if ((target.classList.contains('e-read-only-cells')) || (!scheduleObj.isSlotAvailable(startDate, endDate, groupIndex))) {
+                        args.cancel = true;
+                    }
+                }
+                else if (target.classList.contains('e-appointment') && (isReadOnly(data.EndTime) || target.classList.contains('e-lunch-break') || target.classList.contains('e-maintenance'))) {
+                    args.cancel = true;
+                }
             }
         },
         renderCell: function (args) {
             if (args.element.classList.contains('e-work-cells')) {
-                ej2_base_1.addClass([args.element], ['jammy', 'tweety', 'rounded', 'scenic', 'mission'][parseInt(args.element.getAttribute('data-group-index'), 10)]);
-                if (args.date.getHours() == 13) {
-                    ej2_base_1.addClass([args.element], 'lunch-break');
-                }
-                if (((args.element.classList.contains('jammy') || args.element.classList.contains('rounded') || args.element.classList.contains('mission')) && (args.date.getHours() == 8 && args.date.getMinutes() == 0)) || ((args.element.classList.contains('tweety') || args.element.classList.contains('scenic')) && (args.date.getHours() == 14 && args.date.getMinutes() == 0)) || ((args.element.classList.contains('rounded') || args.element.classList.contains('mission')) && (args.date.getHours() == 17 && args.date.getMinutes() == 0))) {
-                    ej2_base_1.addClass([args.element], 'maintenance');
-                }
                 if (args.date < new Date(2018, 6, 31, 0, 0)) {
                     args.element.setAttribute('aria-readonly', 'true');
                     args.element.classList.add('e-read-only-cells');
@@ -65,9 +71,25 @@ define(["require", "exports", "@syncfusion/ej2-schedule", "./datasource", "@sync
             }
         },
         eventRendered: function (args) {
-            if (isReadOnly(args.data)) {
+            var data = args.data;
+            if (isReadOnly(data.EndTime) || data.EventType == "Lunch" || data.EventType == "Maintenance") {
                 args.element.setAttribute('aria-readonly', 'true');
                 args.element.classList.add('e-read-only');
+            }
+            if (data.EventType == "Lunch") {
+                args.element.classList.add('e-lunch-break');
+            }
+            else if (data.EventType == "Maintenance") {
+                args.element.classList.add('e-maintenance');
+            }
+        },
+        actionBegin: function (args) {
+            if (args.requestType == "eventCreate" || args.requestType == "eventChange") {
+                var data_1 = args.data;
+                var groupIndex = scheduleObj.eventBase.getGroupIndexFromEvent(data_1);
+                if (!scheduleObj.isSlotAvailable(data_1.StartTime, data_1.EndTime, groupIndex)) {
+                    args.cancel = true;
+                }
             }
         }
     };

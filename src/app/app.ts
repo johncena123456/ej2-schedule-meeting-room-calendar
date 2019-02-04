@@ -36,11 +36,11 @@ let scheduleOptions: ScheduleModel = {
         resources: [{
             field: 'RoomId', title: 'Select Room', name: 'Rooms', allowMultiple: true,
             dataSource: [
-                { text: 'Jammy Cool', id: 1, capacity: 20, type: 'Conference' },
-                { text: 'Tweety Nest', id: 2, capacity: 7, type: 'Cabin'},
-                { text: 'Rounded Corner', id: 3, capacity: 5, type: 'Cabin' },
-                { text: 'Scenic View Hall', id: 4, capacity: 15, type: 'Conference' },
-                { text: 'Mission Hall', id: 5, capacity: 25, type: 'Conference' }
+                { text: 'Training room', id: 1, capacity: 20, type: 'Conference' },
+                { text: 'Conf room 1', id: 2, capacity: 7, type: 'Cabin'},
+                { text: 'Interview room 1', id: 3, capacity: 5, type: 'Cabin' },
+                { text: 'Interview room 2', id: 4, capacity: 15, type: 'Conference' },
+                { text: 'Conf room 2', id: 5, capacity: 25, type: 'Conference' }
             ],
             textField: 'text', idField: 'id'
         }],
